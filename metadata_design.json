@@ -1,0 +1,15 @@
+{
+    "version": 1.0,
+    "chunk_size": "16mb",
+    "hash_aglo": "sha256",
+    "files": {
+        "Folder/file.txt" : {
+            "size" : "file_size",
+            "total_chunks": "size/chunk_size",
+            "chunks" : {
+                "0": {"hash" : "hash"} ,
+                "1": {"hash" : "hash"} 
+            }
+        }
+    }
+}
