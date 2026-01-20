@@ -91,6 +91,10 @@ Any message not defined here is considered a protocol violation.
   - size (int): file size in bytes
   - total_chunks (int): number of chunks
   - modified_time (int): unix timestamp
+  - chunks (map):
+  - chunk_index (string):
+      - hash (string): SHA-256 hash of the chunk
+
 
 ### CHUNK_REQUEST
 
@@ -255,6 +259,15 @@ Failures may include, but are not limited to:
 
 This design guarantees safe and deterministic resumption without duplicate or unnecessary data transfer.
 
+### Manifest Authority
+
+- The MANIFEST_RESPONSE provided by the sender is authoritative for
+  file structure and expected chunk hashes.
+- The receiver’s local manifest is authoritative only for transfer
+  progress and resume state.
+- If the sender’s manifest differs from a previously stored receiver
+  manifest, the receiver must reconcile or restart the transfer.
+
 
 ## 8. Protocol Versioning
 
@@ -274,7 +287,8 @@ This document defines Protocol Version 1.
 
 ## 9. State Machines
 
-This part defines all the possible filesystem states.
+This section defines the protocol state machines.
+
 ### Receiver States
 
 - INIT  
