@@ -194,6 +194,16 @@ The protocol follows a strictly receiver-driven flow. The sender never initiates
 - Upon sending or receiving an ERROR message, the connection must be closed immediately.
 - Recovery, if possible, occurs by restarting the protocol session using persisted receiver state.
 
+### Protocol Invariants
+
+The following conditions must always hold:
+
+- The sender never sends data without an explicit request.
+- Only one chunk is in flight at any time.
+- The receiver is the only entity that decides transfer order.
+- A chunk is immutable once its hash is published in MANIFEST_RESPONSE.
+- Sender and receiver must never assume shared filesystem state.
+
 
 ## 7. Failure & Resume Semantics
 
@@ -224,6 +234,16 @@ Failures may include, but are not limited to:
 - The sender maintains no transfer state between sessions.
 - Upon any connection failure, both sides must discard in-memory transfer state.
 - No attempt is made to continue a session after a protocol error or disconnection.
+- If a CHUNK_RESPONSE is received for a chunk that was not requested,
+  the receiver must treat this as a protocol violation and send ERROR.
+- If a chunk hash verification fails, the receiver must re-request the
+  same chunk and must not advance transfer state.
+- If the TCP connection drops at any point, both sender and receiver
+  must discard in-memory state and close the connection.
+- The receiver must never mark a chunk as completed unless its hash
+  verification succeeds.
+- The sender must not cache or reuse chunk data across sessions.
+
 
 ### Resume Behavior
 
@@ -250,3 +270,37 @@ This document defines Protocol Version 1.
 - Future protocol versions may extend message types or fields.
 - Backward-incompatible changes must be introduced under a new protocol version.
 - Protocol Version 1 is intentionally minimal and strict to ensure correctness and simplicity.
+
+
+## 9. State Machines
+
+This part defines all the possible filesystem states.
+### Receiver States
+
+- INIT  
+  Receiver is started but no connection exists.
+- CONNECTED  
+  TCP connection established with sender.
+- WAITING_FOR_MANIFEST  
+  MANIFEST_REQUEST sent, awaiting MANIFEST_RESPONSE.
+- REQUESTING_CHUNKS  
+  Receiver selects missing chunks and sends CHUNK_REQUEST messages.
+- VERIFYING_CHUNK  
+  Receiver verifies hash of received chunk and updates manifest.
+- COMPLETED  
+  All chunks verified; TRANSFER_COMPLETE sent.
+- ERROR  
+  Protocol violation or unrecoverable error encountered.
+
+### Sender States
+
+- IDLE  
+  Sender not connected.
+- CONNECTED 
+  TCP connection established.
+- SENDING_MANIFEST  
+  Responding to MANIFEST_REQUEST.
+- SENDING_CHUNK  
+  Responding to CHUNK_REQUEST.
+- TERMINATED  
+  Connection closed or TRANSFER_COMPLETE received.
