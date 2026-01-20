@@ -199,6 +199,17 @@ The protocol follows a strictly receiver-driven flow. The sender never initiates
 
 The protocol is designed with the assumption that failures are normal and expected.
 
+### Chunk Hash Semantics
+
+- The sender computes SHA-256 hashes for all chunks when responding to MANIFEST_REQUEST.
+- Chunk hashes are included in MANIFEST_RESPONSE.
+- These hashes represent the expected content of each chunk.
+- During transfer, the sender also includes the hash in CHUNK_RESPONSE.
+- The receiver verifies that the received chunk hash matches the expected hash
+  from the manifest.
+- If verification fails, the receiver re-requests the chunk.
+
+
 ### Failure Scenarios
 
 Failures may include, but are not limited to:
